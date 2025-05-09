@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import streamlit as st
+import plotly.express as px
+import plotly.figure_factory as ff
+import plotly.graph_objects as go
+
 
 # Read the data from the CSV file
 try:
@@ -70,7 +74,7 @@ def price_per_housetype(df):
     option = st.selectbox(
         'Select House Type',
         sorted(df['type'].unique()), 
-        key='house_type_selection'
+        key='new_house_type_selection'
         )
     
     if option:
@@ -86,20 +90,21 @@ def price_per_housetype(df):
 def price_per_sqft(df):
     # Price per square foot using a slider for price range
     st.subheader('Price per Square Foot')
-    option = st.selectbox(
-        'Select House Type',
-        sorted(df['type'].unique()), 
-        key='house_type_selection'
+    
+    option_province = st.selectbox(
+        'Select Province',
+        sorted(df['province'].unique()),
+        key='province_selection'
         )
     
-    if option:
-        filtered_df = df[df['type'] == option]
-        
+    if option_province:
+        filtered_df = df[(df['province'] == option_province)]
+       
         filtered_df['per_sqft'] = filtered_df['price'] / filtered_df['sq_feet']
-        avg_sqft_per_province = filtered_df.groupby('province')['per_sqft'].mean().reset_index()
+        avg_sqft_per_province = filtered_df.groupby('type')['per_sqft'].mean().reset_index()
         
-        st.write(f"Average rental price per square foot for {option}")
-        st.bar_chart(avg_sqft_per_province.set_index('province')['per_sqft'], use_container_width=True)
+        st.write(f"Average rental price per square foot for {option_province}")
+        st.bar_chart(avg_sqft_per_province.set_index('type')['per_sqft'], use_container_width=True)
         
     
 #price_per_sqft(df) 
@@ -114,34 +119,89 @@ def price_outlier_analysis(df):
     # Boxplot of rental prices to identify outliers // using IQR or z-score to flag extreme prices.
     pass
 
-def frequency_distribution_analysis(df):
-    # Frequency distribution of rental prices // histogram or density plot.
-    pass
+def rental_price_distribution_analysis(df):
+    # Distribution of rental prices per provience using a histogram 
+    option_province = st.selectbox(
+        'Select Province',
+        sorted(df['province'].unique()),
+        key = 'new_province_selection'
+        )
+    
+    if option_province:
+        histogram_data = df[df['province'] == option_province]['price']
+
+        if not histogram_data.empty:
+            fig = go.Figure()
+            fig.add_trace(go.Histogram(
+                x = histogram_data,
+                nbinsx = 30,
+                name = 'Rental Price Distribution',
+                marker_color = 'light blue',
+                opacity = 0.75
+            ))
+            
+            fig.update_layout(title_text = f'Listing Frequency by Price in {option_province}',
+                            xaxis_title = 'Rental Price',
+                            yaxis_title = 'Number of Listings',
+                            bargap = 0.05,
+                            height = 600)
+                   
+            st.plotly_chart(fig) 
+            
+        else:
+            st.warning('No data available for {option_province}. Please select a different province.')
+        
+#rental_price_distribution_analysis(df)
+    
+    
 
 def pie_chart_analysis(df):
     # Pie chart to show the distribution of different house types in the dataset.
     st.subheader('House Type Distribution')
     house_type_counts = df['type'].value_counts()
     
-    fig, ax = plt.subplots()
-    ax.pie(house_type_counts.values, labels=house_type_counts.index, autopct='%1.1f%%', startangle=45)
-    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
+    fig = px.pie(house_type_counts,
+                 values = house_type_counts.values,
+                 names = house_type_counts.index,
+                 color_discrete_sequence = px.colors.sequential.Viridis)
     
-    st.pyplot(fig)
-
+    fig.update_traces(hovertemplate='%{label}: %{percent:.2%}', texttemplate='%{percent:.2%}')
+    
+    st.plotly_chart(fig)
 
 #pie_chart_analysis(df)
   
 
 def scatter_plot_analysis(df):
     # Scatter plot to show the relationship between rental prices and the number of bedrooms.
-    pass 
+    
+    st.subheader('Size vs Price')
+    st.write('Scatter Plot of Rental Prices vs Number of Bedrooms including number of bedrooms')
+    
+    chart_data = df[['price', 'sq_feet']]
+    chart_data = chart_data[chart_data['sq_feet'] > 50]  # Filter out rows with zero square feet
+    
+    
+    fig = px.scatter(chart_data, 
+                     x = 'sq_feet', 
+                     y = 'price', 
+                     trendline = 'ols',
+                     height = 600,
+                     labels = {'sq_feet': 'Square Feet', 'price': 'Rental Price'},
+                     color_discrete_sequence = ['blue'])
+    
+    fig.data[1].update(name = 'Trendline', line_color = 'red')
+    
+    fig.update_layout(
+        xaxis = dict(range = [0, chart_data['sq_feet'].max() * 1.1]),
+        yaxis = dict(range = [0, chart_data['price'].max() * 1.1])
+    )
+    
+ 
+    st.plotly_chart(fig)
+    
 
 
-# Todo:
-# 1. add a frequency distribution of rental prices to see how they are distributed across different ranges.
-# --> this could be a histogram or density plot.
-# 2. add a pie chart to show the distribution of different house types in the dataset.
-# --> this could be a good way to visualize the data and see which types of houses are most common in the rental market.
-# 3. add a scatter plot to show the relationship between rental prices and the number of bedrooms.
-# --> this could be a good way to visualize the data and see if larger houses tend to have higher rental prices. 
+
+    
+#scatter_plot_analysis(df)  
