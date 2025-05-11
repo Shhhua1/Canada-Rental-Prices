@@ -7,11 +7,10 @@ This project is a data analytics dashboard built with Streamlit that visualizes 
 ## Table of Contents
 
 1. [Installation](#installation)
-2. [Usage](#usage)
-3. [Features](#features)
-4. [Tech_Stack](#tech_stack)
-5. [Data_Source](#data_source)
-6. [Contact](#contact)
+2. [Features](#features)
+3. [Tech_Stack](#tech_stack)
+4. [Data_Source](#data_source)
+5. [Contact](#contact)
 
 ---
 
@@ -52,5 +51,4 @@ This project uses the following technologies:
 
 ## Contact
 
-Josh Demers
-demers727@gmail.com
+Josh Demers | demers727@gmail.com
