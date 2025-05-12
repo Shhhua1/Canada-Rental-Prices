@@ -1,11 +1,20 @@
-import numpy as np
+# Import necessary libraries
 import pandas as pd
-import matplotlib.pyplot as plt
 import streamlit as st
-import plotly.express as px
-#import plotly.figure_factory as ff
-import plotly.graph_objects as go
 
+# Import analysis functions from data_analysis.py
+from data_analysis import (
+    price_per_province,
+    mapped_price,
+    price_per_housetype,
+    price_per_sqft,
+    lease_term_analysis,
+    outlier_analysis,
+    rental_price_distribution_analysis,
+    pie_chart_analysis_house_type,
+    pie_chart_analysis_province,
+    scatter_plot_analysis
+)
 
 # Read the data from the CSV file
 try:
@@ -13,246 +22,111 @@ try:
 except FileNotFoundError:
     st.error("The file 'rentfaster_cleaned.csv' was not found. Please ensure it exists in the same directory as this script.")
     st.stop()
-    
+
+# Set Streamlit page configuration
 st.set_page_config(layout="wide")
 
-st.title('Canadian Rental Price Analysis')
-st.write("This app analyzes rental prices in Canada based on various features")
+# Page title and separator
+st.markdown("<h2 style='text-align: center;'>Canadian Rental Price Analysis</h2>", unsafe_allow_html=True)
+st.markdown('---')
 
-st.subheader('Raw Data')
-st.write(df)
+# Dictionary mapping graph names to their respective functions
+graph_functions = {
+    'Price per Province': price_per_province,
+    'Map': mapped_price,
+    'Price per Rental Type': price_per_housetype,
+    'Price per Square Foot': price_per_sqft,
+    'Lease Term Analysis': lease_term_analysis,
+    'Outlier Analysis': outlier_analysis,
+    'Rental Price Distribution Analysis': rental_price_distribution_analysis,
+    'Pie Chart Analysis: House': pie_chart_analysis_house_type,
+    'Pie Chart Analysis: Province': pie_chart_analysis_province,
+    'Scatter Plot Analysis': scatter_plot_analysis
+}
 
+# Sidebar navigation
+st.sidebar.title('Navigation')
+st.sidebar.write('Select a page to view.')
+st.sidebar.write('---')
 
-def price_per_province(df):
-    # Plotting average rental price per province based on the number of rooms
-    # Using selectbox to filter the data based on the number of rooms
-    st.subheader('Average Rental Price per Province')
-    option = st.selectbox(
-        'Select Number of Rooms', 
-        sorted(df['beds'].unique()), 
-        key='room_selection'
-        )
+def page_home():
+    """Display the home page with a welcome message."""
+    st.markdown("<h1 style='text-align: center;'>Welcome!</h1>", unsafe_allow_html=True)
+    st.write(' ')
+    st.markdown("<h5 style='text-align: center;'>This app provides insights into rental prices across Canada based on various features.</h5>", unsafe_allow_html=True)
+    st.markdown("<h5 style='text-align: center;'>Use the sidebar on the left to get started.</h5>", unsafe_allow_html=True)
 
-    if option:
-        filtered_df = df[df['beds'] == option]
-        avg_price_per_province = filtered_df.groupby('province')['price'].mean().reset_index()
-        
-        st.write(f"Average rental price for {option} room(s)")
-        st.bar_chart(avg_price_per_province.set_index('province')['price'], use_container_width=True)
+def main():
+    """Display analysis graphs based on sidebar toggles."""
+    for graph_name, graph_func in graph_functions.items():
+        if st.sidebar.toggle(graph_name):
+            st.subheader(graph_name)
+            graph_func(df)
 
-def mapped_price(df):
-    # Mapping rental prices to provinces using a slider for price range + a selectbox for house types + a heatmap
-    st.subheader('Mapped Rental Prices')
-    selectbox_option = st.selectbox(
-        'Select House Type',
-        sorted(df['type'].unique()),
-        key='house_type_selection'
-    )
-    
-    slider_option = st.slider(
-        'Select Price Range',
-        min_value=int(df['price'].min()),
-        max_value=int(df['price'].max()),
-        value=(int(df['price'].min()), int(df['price'].max())),
-        key='price_range_selection'
-    )
-    
-    if selectbox_option and slider_option:
-        filtered_df = df[(df['type'] == selectbox_option) & (df['price'].between(slider_option[0], slider_option[1]))]
-        
-        avg_price_per_province = filtered_df.groupby('province')['price'].mean().reset_index()
-        st.write(f"Average rental price for {selectbox_option} in the selected price range")
-        st.map(filtered_df)
+def page_summary():
+    """Display a summary of the analysis and personal insights."""
+    st.markdown("<h1 style='text-align: center;'>Summary of Analysis</h1>", unsafe_allow_html=True)
+    col1, col2 = st.columns(2, border=True)
+    with col1:
+        # Key findings from the analysis
+        st.subheader("Key Findings:")
+        st.write("The following key findings were made during the analysis:")
+        st.write("- The average rental price in Canada is ${:,.2f}.".format(df['price'].mean()))
+        st.write("- The province with the highest average rental price is {}.".format(df.groupby('province')['price'].mean().idxmax()))
+        st.write("- The most expensive house type per square foot is {}.".format(df.groupby('type')['sq_feet'].mean().idxmax()))
+        st.write("- Short-term leases tend to have higher average prices than long-term leases.")
+        st.write("- Outlier analysis reveals a small number of extremely high-priced rentals.")
+        st.write("- Rental price distribution is right-skewed, indicating most rentals are below the mean price.")
+        st.write("- The majority of listings are for apartments and condos.")
+        st.write("- The most common house type is {}.".format(df['type'].mode()[0]))
+        st.write("- There is a positive correlation between square footage and rental price, but with significant variance.")
+    with col2:
+        # Personal insights and data limitations
+        st.subheader('Personal Insights:')
+        st.write('After working on this project these are my key takeaways:')
+        st.write('- Due to the limited data, the analysis may not be fully representative of the true Canadian rental market. Furthermore, since the data has no date, it is difficult to determine if the data is current or not.')
+        st.write('- Overall the data appears to provide a somewhat accurate representation of the rental market in Canada in select provinces.')
+        st.write('- The first issue with the data that I noticed is that the data is limited to the provinces of Alberta, British Columbia, and Ontario (as seen in the pie chart). This means that the analysis may not be fully representative of the true Canadian rental market.')
+        st.write('- The next issue with the data is the distribution of house types. The data is limited to the house types of apartments, condos, and houses (again as seen in the pie chart).')
+        st.write('- The last issue with the data is that there are a number of outliers in the data that dont appear to be representative of the true rental market. We can see these issues arise when looking at the higest average rental price (as seen in the key findings). Moreover this is evident in the outlier analysis and the rental price distribution analysis.')
 
-def price_per_housetype(df):
-    # Price per house type using a selectbox for house types
-    st.subheader('Average Rental Price per Province')
-    option = st.selectbox(
-        'Select House Type',
-        sorted(df['type'].unique()), 
-        key='new_house_type_selection'
-        )
-    
-    if option:
-        filtered_df = df[df['type'] == option]
-        avg_price_per_province = filtered_df.groupby('province')['price'].mean().reset_index()
-        
-        st.write(f"Average rental price for {option}")
-        st.bar_chart(avg_price_per_province.set_index('province')['price'], use_container_width=True) 
+def contact():
+    """Display contact information."""
+    st.title("Contact Me")
+    st.write("If you have any questions or feedback, please reach out to me at:")
+    st.write('---')
+    st.write("Github: [Link](https://github.com/Shhhua1)")
+    st.write("LinkedIn: [Link](https://www.linkedin.com/in/josh-d-158587101/)")
 
-def price_per_sqft(df):
-    # Price per square foot using a slider for price range
-    st.subheader('Price per Square Foot')
-    
-    option_province = st.selectbox(
-        'Select Province',
-        sorted(df['province'].unique()),
-        key='province_selection'
-        )
-    
-    if option_province:
-        filtered_df = df[(df['province'] == option_province)]
-       
-        filtered_df['per_sqft'] = filtered_df['price'] / filtered_df['sq_feet']
-        avg_sqft_per_province = filtered_df.groupby('type')['per_sqft'].mean().reset_index()
-        
-        st.write(f"Average rental price per square foot for {option_province}")
-        st.bar_chart(avg_sqft_per_province.set_index('type')['per_sqft'], use_container_width=True)
-        
-def lease_term_analysis(df):
-    # Bar chart of average price by lease term // Do prices differ based on lease term (e.g., monthly vs yearly)?
-    st.subheader('Lease Term Analysis')
-    
-    options = sorted(df['lease_term'].unique())
-    selection = st.segmented_control(
-        " ", options, selection_mode = "multi"
-    )
-    
-    if selection:
-        filtered_df = df[df['lease_term'].isin(selection)]
-        avg_price_per_lease_term = filtered_df.groupby('lease_term')['price'].mean().reset_index()
-        
-        fig = px.bar(avg_price_per_lease_term, x = 'lease_term', y = 'price', color = 'lease_term')
-        
-        fig.update_layout(
-            title_text = 'Average Rental Price by Lease Term',
-            xaxis_title = 'Lease Term',
-            yaxis_title = 'Average Price',
-            height = 600,
-            coloraxis_colorbar = dict(title = "Lease Term")
-        )
+def page_raw_data():
+    """Display the raw data and its overview."""
+    st.title("Raw Data")
+    st.write("Here is the raw data used for the analysis:")
+    st.dataframe(df)
 
-        st.plotly_chart(fig)
+    st.subheader("Data Overview:")
+    st.write("The dataset contains {} rows and {} columns.".format(df.shape[0], df.shape[1]))
+    st.write("The dataset includes the following columns:")
+    st.write(df.columns.tolist())
+    st.write("The dataset contains the following unique values:")
+    for column in df.columns:
+        st.write("- {}: {} unique values".format(column, df[column].nunique()))
+    st.write("The dataset contains the following data types:")
+    st.write(df.dtypes)
+    st.write("The dataset contains the following descriptive statistics:")
+    st.write(df.describe())
 
-def outlier_analysis(df):
-    # Boxplot of rental prices to identify outliers // using IQR or z-score to flag extreme prices.
-    
-    st.subheader('Price Outlier Analysis using IQR')
-    
-    option_province = st.selectbox(
-    'Select Province',
-    sorted(df['province'].unique()),
-    key='province_selection'
-    )
-    
-    if option_province:
-        filtered_df = df[df['province'] == option_province]
-        
-        fig = px.box(filtered_df,
-                    x = 'price',
-                    y = 'province',
-                    points = 'all',)
+# Sidebar page selection
+page = st.sidebar.selectbox("Choose a page", ["Home", "Analysis", "Summary", "Raw Data", "Contact"])
 
-                
-        st.plotly_chart(fig) 
-    
-def rental_price_distribution_analysis(df):
-    # Distribution of rental prices per provience using a histogram 
-    option_province = st.selectbox(
-        'Select Province',
-        sorted(df['province'].unique()),
-        key = 'new_province_selection'
-        )
-    
-    if option_province:
-        histogram_data = df[df['province'] == option_province]['price']
-
-        if not histogram_data.empty:
-            fig = go.Figure()
-            fig.add_trace(go.Histogram(
-                x = histogram_data,
-                nbinsx = 30,
-                name = 'Rental Price Distribution',
-                marker_color = 'light blue',
-                opacity = 0.75
-            ))
-            
-            fig.update_layout(title_text = f'Listing Frequency by Price in {option_province}',
-                            xaxis_title = 'Rental Price',
-                            yaxis_title = 'Number of Listings',
-                            bargap = 0.05,
-                            height = 600)
-                   
-            st.plotly_chart(fig) 
-            
-        else:
-            st.warning('No data available for {option_province}. Please select a different province.')
-        
-def pie_chart_analysis(df):
-    # Pie chart to show the distribution of different house types in the dataset.
-    st.subheader('House Type Distribution')
-    house_type_counts = df['type'].value_counts()
-    
-    fig = px.pie(house_type_counts,
-                 values = house_type_counts.values,
-                 names = house_type_counts.index,
-                 color_discrete_sequence = px.colors.sequential.Viridis)
-    
-    fig.update_traces(hovertemplate='%{label}: %{percent:.2%}', texttemplate='%{percent:.2%}')
-    
-    st.plotly_chart(fig)
-
-def scatter_plot_analysis(df):
-    # Scatter plot to show the relationship between rental prices and the number of bedrooms.
-    
-    st.subheader('Size vs Price')
-    st.write('Scatter Plot of Rental Prices vs Number of Bedrooms including number of bedrooms')
-    
-    chart_data = df[['price', 'sq_feet']]
-    chart_data = chart_data[chart_data['sq_feet'] > 50]  # Filter out rows with zero square feet
-    
-    
-    fig = px.scatter(chart_data, 
-                     x = 'sq_feet', 
-                     y = 'price', 
-                     trendline = 'ols',
-                     height = 600,
-                     labels = {'sq_feet': 'Square Feet', 'price': 'Rental Price'},
-                     color_discrete_sequence = ['blue'])
-    
-    fig.data[1].update(name = 'Trendline', line_color = 'red')
-    
-    fig.update_layout(
-        xaxis = dict(range = [0, chart_data['sq_feet'].max() * 1.1]),
-        yaxis = dict(range = [0, chart_data['price'].max() * 1.1])
-    )
-    
- 
-    st.plotly_chart(fig)
-    
-   
-########################################################
-# GRAPHS                                               #
-# price_per_province(df)                               #
-# mapped_price(df)                                     #
-# price_per_housetype(df)                              #
-# price_per_sqft(df)                                   #
-# lease_term_analysis(df)                              #
-# outlier_analysis(df)                                 #
-# rental_price_distribution_analysis(df)               #
-# pie_chart_analysis(df)                               #
-# scatter_plot_analysis(df)                            #
-########################################################
-
-# TO DO 
-# Add a sidebar for filtering options
-# Make the app look more visually appealing
-# Add a page for raw data
-# Add a page for a summary of the analysis
-
-
-# col1, col2 = st.columns(2)
-# col1.write('Column 1')
-# col2.write('Column 2')
-
-
-# # Three columns with different widths
-# #col1, col2= st.columns([3,1])
-
-
-# # Using 'with' notation:
-# with col1:
-#     price_per_housetype(df)
-    
-# with col2:
-#     price_per_province(df)
+# Render the selected page
+if page == "Home":
+    page_home()
+elif page == "Analysis":
+    main()
+elif page == "Raw Data":
+    page_raw_data()
+elif page == "Summary":
+    page_summary()
+elif page == "Contact":
+    contact()
