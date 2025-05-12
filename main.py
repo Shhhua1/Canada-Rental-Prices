@@ -88,7 +88,7 @@ def page_summary():
         st.write('After working on this project these are my key takeaways:')
         st.write('- Due to the limited data, the analysis may not be fully representative of the true Canadian rental market. Furthermore, since the data has no date, it is difficult to determine if the data is current or not.')
         st.write('- Overall the data appears to provide a somewhat accurate representation of the rental market in Canada in select provinces.')
-        st.write('- The first issue with the data that I noticed is that the data is limited to the provinces of Alberta, British Columbia, and Ontario (as seen in the pie chart). This means that the analysis may not be fully representative of the true Canadian rental market.')
+        st.write('- The first issue with the data that I noticed is that the data is limited to mainly Alberta and Ontario (as seen in the pie chart). This means that the analysis may not be fully representative of the true Canadian rental market.')
         st.write('- The next issue with the data is the distribution of house types. The data is limited to the house types of apartments, condos, and houses (again as seen in the pie chart).')
         st.write('- The last issue with the data is that there are a number of outliers in the data that dont appear to be representative of the true rental market. We can see these issues arise when looking at the higest average rental price (as seen in the key findings). Moreover this is evident in the outlier analysis and the rental price distribution analysis.')
 
