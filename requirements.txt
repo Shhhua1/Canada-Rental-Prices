@@ -1,0 +1,5 @@
+# This file is used to specify the dependencies for the project.
+pandas
+numpy
+plotly
+streamlit
